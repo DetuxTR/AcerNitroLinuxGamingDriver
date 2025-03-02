@@ -6,7 +6,7 @@
 #include "linux/kstrtox.h"
 #include "linux/printk.h"
 #include "linux/wmi.h"
-
+#include "linux/pwm.h"
 
 
 
@@ -42,12 +42,12 @@ ssize_t cdev_user_write(struct file * file,const char __user * buff, size_t coun
     printk(KERN_INFO"writing to : %d",cdev_minor);
     char * kbfr=kmalloc(count,GFP_KERNEL);
     int ispeed =0;
-    if(kbfr==NULL)       // Check before copy
+    if(kbfr==NULL)
         return -ENOMEM;
     copy_from_user(kbfr,buff,count);
     int ix = strnlen(kbfr, count);
-    if (ix > 0)          // check for 0
-        kbfr[ix-1] = '\0';   // always terminate
+    if (ix > 0)
+        kbfr[ix-1] = '\0';
     printk(KERN_INFO"%s",kbfr);
     switch(cdev_minor){
         case 0:
@@ -154,7 +154,6 @@ int module_startup(void){
     cdev_create("fan1",cmajor ,0,cclass );
     cdev_create("fan2",cmajor ,1,cclass );
     wmi_driver_register(&wdrv);
-
     printk("Acer Nitro Gaming Functions Wmi Driver Module was loaded");
     return 0;
 }
