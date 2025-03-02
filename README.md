@@ -3,6 +3,7 @@ An experimental driver to control fan speeds\ and the rgb of keyboard on Acer Ni
 
 Thanks to https://github.com/tuxedocomputers/tuxedo-drivers for a starting point to new device based wmi drivers on linux kernel and https://github.com/JafarAkhondali/acer-predator-turbo-and-rgb-keyboard-linux-module for setting 4zone keyboard rgb.
 
+Development may be a bit slow because of my school. I am a student who spends his 9 hours on school every day. <br>
 Installation:
 On arch:<br>
 makepkg -si --skipchecksums<br>
