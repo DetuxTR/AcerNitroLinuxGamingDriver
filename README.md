@@ -25,7 +25,7 @@ Setting fan speeds<br>
 Note: the fan speed should be multiples of 128. eg. 128 256 512 768<br>
 
 
-Some things can be bugprone, feel free to report issues from here.
+Some things can be buggy, feel free to report issues from here.
 
 <p>To-do: Implementing the turbo mode in NitroSense<br>
 Making turbo button usable <br>
