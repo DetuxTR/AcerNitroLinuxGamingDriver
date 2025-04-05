@@ -11,14 +11,6 @@
 
 
 MODULE_LICENSE("GPL");
-
-#define MINORMASK 0xff
-#define MAX_FAN_SPEED 10000
-
-static int cmajor = 0;
-static struct class *cclass = NULL;
-static dev_t cdev;
-static struct device *dev1 = NULL, *dev2 = NULL;
 static int cmajor= 0;
 
 static struct class *cclass=NULL;
@@ -39,14 +31,11 @@ extern int chdev_uevent(const struct device *dev,struct kobj_uevent_env *env){
     return 0;
 }
 
-static int cdev_create(const char *name, int major, int minor, struct class *cls) {
-    struct device *dev;
-    dev = device_create(cls, NULL, MKDEV(major, minor), NULL, name);
-    if (IS_ERR(dev)) {
-        printk(KERN_ERR "Cihaz oluşturulamadı %s", name);
-        return PTR_ERR(dev);
-    }
-    return 0;
+void cdev_create(char * name, int major, int minor,  struct class *class){
+    cdev_init(&cdev_data[minor].cdev,&cfops);
+    cdev_data[minor].cdev.owner = THIS_MODULE;
+    cdev_add(&cdev_data[minor].cdev,MKDEV(major,minor),1);
+    device_create(class,NULL,MKDEV(major,minor),NULL,name);
 }
 ssize_t cdev_user_write(struct file * file,const char __user * buff, size_t count, loff_t *offset){
     int cdev_minor = MINOR(file->f_path.dentry->d_inode->i_rdev);
@@ -176,60 +165,46 @@ extern void dy_kbbacklight_set(int mode, int speed, int brg, int drc, int red, i
     struct acpi_buffer in  = {(acpi_size)sizeof(dynarray),dynarray};
     wmi_eval_method(20,in);
 }
-static int cdev_create(const char *name, int major, int minor, struct class *cls, struct device **dev) {
-    *dev = device_create(cls, NULL, MKDEV(major, minor), NULL, name);
-    return IS_ERR(*dev) ? PTR_ERR(*dev) : 0;
-}
-
-static int __init module_startup(void) {
+int module_startup(void){
     int status;
-    
-    if (!wmi_has_guid(WMI_GAMING_GUID)) {
-        printk(KERN_ERR "WMI GUID not found");
-        return -ENODEV;
-    }
 
-    if (alloc_chrdev_region(&cdev, 0, 2, "acernitrogaming")) {
-        printk(KERN_ERR "Failed to allocate chrdev");
+    if(!wmi_has_guid(WMI_GAMING_GUID))
+        return -ENODEV;
+
+    if(alloc_chrdev_region(&cdev, 0, 2, "acernitrogaming") < 0)
         return -ENXIO;
-    }
 
     cmajor = MAJOR(cdev);
     cclass = class_create("acernitrogaming");
-    if (IS_ERR(cclass)) {
-        status = PTR_ERR(cclass);
-        goto chrdev_cleanup;
+    if(IS_ERR(cclass)) {
+        unregister_chrdev_region(cdev, 2);
+        return PTR_ERR(cclass);
+    }
+    
+    cclass->dev_uevent = chdev_uevent;
+
+    // Void fonksiyonlar direkt çağrılır
+    cdev_create("fan1", cmajor, 0, cclass);
+    cdev_create("fan2", cmajor, 1, cclass);
+
+    status = wmi_driver_register(&wdrv);
+    if(status) {
+        class_destroy(cclass);
+        unregister_chrdev_region(cdev, 2);
+        return status;
     }
 
-    if ((status = cdev_create("fan1", cmajor, 0, cclass, &dev1)) ||
-        (status = cdev_create("fan2", cmajor, 1, cclass, &dev2))) {
-        goto class_cleanup;
-    }
-
-    if ((status = wmi_driver_register(&wdrv))) {
-        printk(KERN_ERR "WMI registration failed %d", status);
-        goto devices_cleanup;
-    }
-
+    printk(KERN_INFO "Driver yüklendi");
     return 0;
-
-devices_cleanup:
-    if (dev1) device_destroy(cclass, MKDEV(cmajor, 0));
-    if (dev2) device_destroy(cclass, MKDEV(cmajor, 1));
-class_cleanup:
-    class_destroy(cclass);
-chrdev_cleanup:
-    unregister_chrdev_region(cdev, 2);
-    return status;
 }
-
-static void __exit module_finish(void) {
-    wmi_driver_unregister(&wdrv);
-    device_destroy(cclass, MKDEV(cmajor, 0));
-    device_destroy(cclass, MKDEV(cmajor, 1));
+void module_finish(void){
+    printk("Acer Nitro Gaming Functions Wmi Driver Module was unloaded");
+    device_destroy(cclass, MKDEV(cmajor,0));
+    device_destroy(cclass, MKDEV(cmajor,1));
     class_destroy(cclass);
-    unregister_chrdev_region(cdev, 2);
-    printk(KERN_INFO "Driver unloaded");
+    unregister_chrdev_region(MKDEV(cmajor,0 ),MINORMASK );
+    wmi_driver_unregister(&wdrv);
+
 }
 
 module_init(module_startup);
