@@ -1,4 +1,9 @@
 # AcerNitroLinuxGamingDriver
+<br>
+Now I'm starting the Nitro Helper, a fully featured control panel using this driver. İnspired from G-Helper. <br>
+https://github.com/DetuxTR/NitroHelper <br>
+
+
 An experimental driver to control fan speeds\ and the rgb of keyboard on Acer Nitro/Predator.
 
 Thanks to https://github.com/tuxedocomputers/tuxedo-drivers for a starting point to new device based wmi drivers on linux kernel and https://github.com/JafarAkhondali/acer-predator-turbo-and-rgb-keyboard-linux-module for setting 4zone keyboard rgb.
