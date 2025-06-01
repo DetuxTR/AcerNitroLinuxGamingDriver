@@ -28,9 +28,9 @@ Setting fan speeds<br>
 *Cpu fan(left) echo {fanspeed} /dev/fan1<br>
 *Gpu fan(right) echo {fanspeed} /dev/fan2<br>
 Note: the fan speed should be multiples of 128. eg. 128 256 512 768<br>
-Setting the rgb keyboard:
-mode(starting from 1-try numbers)-speed(up to 9)-brightness(up to 100)-direction of animation(1-2)-red(0-255)-green(0-255)-blue(0-255)
-sample: echo 1-9-100-1-255-255-255 > /rgbkb
+Setting the rgb keyboard: <br>
+mode(starting from 1-try numbers)-speed(up to 9)-brightness(up to 100)-direction of animation(1-2)-red(0-255)-green(0-255)-blue(0-255)<br>
+sample: echo 1-9-100-1-255-255-255 > /rgbkb <br>
 
 Some things can be buggy, feel free to report issues from here.
 
