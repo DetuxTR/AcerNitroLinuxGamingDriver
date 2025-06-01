@@ -1,13 +1,15 @@
 #include "acer_nitro_gaming_driver2.h"
 #include "linux/fs.h"
+#include "linux/gfp_types.h"
 #include "linux/init.h"
 #include "linux/kdev_t.h"
 #include "linux/kern_levels.h"
 #include "linux/kstrtox.h"
 #include "linux/printk.h"
+#include "linux/slab.h"
 #include "linux/wmi.h"
 #include "linux/pwm.h"
-
+#include "linux/string.h"
 
 
 MODULE_LICENSE("GPL");
@@ -25,7 +27,7 @@ static const struct file_operations cfops={
 struct chdev_data{
     struct cdev cdev;
 };
-static struct chdev_data cdev_data[2];
+static struct chdev_data cdev_data[3];
 extern int chdev_uevent(const struct device *dev,struct kobj_uevent_env *env){
     add_uevent_var(env, "DEVMODE=%#o",0666);
     return 0;
@@ -60,6 +62,22 @@ ssize_t cdev_user_write(struct file * file,const char __user * buff, size_t coun
             kstrtoint(kbfr,10 ,&ispeed );
             fan_set_speed(ispeed,4 );
             break;
+        case 2:
+            printk(KERN_INFO"RgbKeyboard");
+            char* kbdstrcp = (char*) kmalloc(sizeof(kbfr)+1, GFP_KERNEL);
+            strscpy(kbdstrcp , kbfr,strlen(kbfr)+1);
+            char * found;
+            printk(KERN_INFO"%s",kbdstrcp);
+            int counter = 0;
+            int array[7];
+            while ((found=strsep(&kbdstrcp,"-"))  != NULL){
+                kstrtoint(found,10 ,&array[counter]);
+                counter ++;
+                if (counter>6){
+                    break;
+                }
+            }
+            dy_kbbacklight_set(array[0],array[1],array[2],array[3],array[4],array[5],array[6]);
     }
     return count;
 }
@@ -146,13 +164,14 @@ extern void dy_kbbacklight_set(int mode, int speed, int brg, int drc, int red, i
 int module_startup(void){
     if(!wmi_has_guid(WMI_GAMING_GUID))
         return -ENODEV;
-    if(alloc_chrdev_region(&cdev,0 ,2 ,"acernitrogaming" )<0)
+    if(alloc_chrdev_region(&cdev,0 ,3 ,"acernitrogaming" )<0)
         return -ENXIO;
     cmajor = MAJOR(cdev);
     cclass = class_create("acernitrogaming");
     cclass->dev_uevent=chdev_uevent;
     cdev_create("fan1",cmajor ,0,cclass );
     cdev_create("fan2",cmajor ,1,cclass );
+    cdev_create("rgbkb",cmajor,2,cclass);
     wmi_driver_register(&wdrv);
     printk("Acer Nitro Gaming Functions Wmi Driver Module was loaded");
     return 0;
@@ -161,6 +180,7 @@ void module_finish(void){
     printk("Acer Nitro Gaming Functions Wmi Driver Module was unloaded");
     device_destroy(cclass, MKDEV(cmajor,0));
     device_destroy(cclass, MKDEV(cmajor,1));
+    device_destroy(cclass, MKDEV(cmajor,2));
     class_destroy(cclass);
     unregister_chrdev_region(MKDEV(cmajor,0 ),MINORMASK );
     wmi_driver_unregister(&wdrv);
